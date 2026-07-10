@@ -1,0 +1,12 @@
+src_v,aim_v,units,kind,transform,required,enabled,desc
+temp,TT,K,3d_sigma,identity,true,true,Atmospheric temperature
+uwind,UU,m s-1,3d_sigma,identity,true,true,Zonal wind component
+vwind,VV,m s-1,3d_sigma,identity,true,true,Meridional wind component
+__pressure__,PRESSURE,Pa,3d_pressure,pressure,true,true,Pressure on source slabs for metgrid PRES derivation
+geop,GHT,m,3d_sigma,geop_to_height,true,true,Geopotential height
+psurf,PSFC,Pa,2d,identity,true,true,Surface pressure
+tsurf,SKINTEMP,K,2d,identity,true,true,Skin temperature
+__zero__,SPECHUMD,kg kg-1,3d_constant,zero,true,true,Specific humidity zero
+__zero__,QV,kg kg-1,3d_constant,zero,false,true,Water vapor mixing ratio zero
+coldust,TAU_OD2D,Unitless,2d,dust_to_tau_7mb,false,true,Dust optical depth normalized to 7 mb
+co2ice,CO2ICE,kg m-2,2d,identity,false,true,Surface CO2 ice
