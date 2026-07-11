@@ -1,0 +1,65 @@
+&share
+ wrf_core = 'ARW',
+ max_dom = 2,
+ start_year     = 0028,
+ start_day      = 01,
+ start_hour     = 00,
+ start_second   = 00，
+
+ end_year     = 0029,
+ end_day      = 01,
+ end_hour     = 00,
+ end_second   = 00，
+
+ ! 间隔时间
+ ! XTIME 间隔为 360
+ interval_seconds = 21600
+ io_form_geogrid = 2,
+/
+
+&geogrid
+ ! 嵌套的参数
+ parent_id         =   1,   1,
+ parent_grid_ratio =   1,   3,
+ i_parent_start    =   1,  31,
+ j_parent_start    =   1,  17,
+ ! 四至范围
+ e_we              =  73, 112,
+ e_sn              =  37,  97,
+ ! 不知道干嘛的
+ geog_data_res     = '10m','2m',
+ ! 分辨率
+ dx = 295826,
+ dy = 295826,
+ ！地图投影
+ map_proj = 'lambert',
+ ! 中央经线
+ ! marswrf的中央经纬线变量为 lat_ref 和 lon_ref
+ ! ref_lat   =  34.83,
+ ! ref_lon   = -81.03,
+ feedback    = 0,
+ lat_ref     = 0,
+ ! 这个又是干什么的？
+ truelat1  =  30.0,
+ truelat2  =  60.0,
+ stand_lon = -98.0,
+ ! 静态地理数据
+ geog_data_path = '/mmm/users/wrfhelp/WPS_GEOG'
+/
+
+&ungrib
+ ! 解码格式
+ ! 'WPS' 是常见的 ARW 格式
+ out_format = 'WPS',
+ ! WPS-intermediate文件名前缀
+ prefix = 'MACDA_FILE',
+/
+
+&metgrid
+ ! metgrid 去读哪些 intermediate 文件前缀
+ ! 所以要和 prefix 的值保持一致
+ fg_name = 'FILE'
+ ! metgrid 输出 met_em.d0*.nc 的格式。
+ ! 2 表示 NetCDF
+ io_form_metgrid = 2, 
+/

@@ -1,0 +1,43 @@
+&share
+ wrf_core = 'ARW',
+ max_dom = 1,
+
+ ! MarsWRF planetary calendar: MY28, sol-of-year 507 through 537.
+ ! The checked old marswrf/WPS date routines must be patched to parse DDDDD.
+ start_date = '0028-00507_02:00:00',
+ end_date   = '0028-00537_00:00:00',
+ interval_seconds = 7200,
+
+ ! NetCDF geo_em output.
+ io_form_geogrid = 2,
+/
+
+&geogrid
+ ! One global domain, aligned with em_global_mars and the 72 x 36 MACDA grid.
+ parent_id         = 1,
+ parent_grid_ratio = 1,
+ i_parent_start    = 1,
+ j_parent_start    = 1,
+ e_we              = 73,
+ e_sn              = 37,
+
+ ! With dx/dy omitted, WPS treats this as a global 5-degree lat-lon grid.
+ ! stand_lon=-2.5 places the first mass point at 0 degrees east.
+ map_proj = 'lat-lon',
+ stand_lon = -2.5,
+
+ geog_data_res = 'mars_default',
+ geog_data_path = '/home/zy/WRF/marswrf/macda-to-wrfinterm/sample/WPS_GEOG_MARS',
+ opt_geogrid_tbl_path = '/home/zy/WRF/marswrf/macda-to-wrfinterm/sample/geogrid',
+/
+
+&ungrib
+ out_format = 'WPS',
+ prefix = 'MACDA',
+/
+
+&metgrid
+ fg_name = 'MACDA',
+ io_form_metgrid = 2,
+/
+
