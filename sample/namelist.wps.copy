@@ -26,9 +26,10 @@
  map_proj = 'lat-lon',
  stand_lon = -2.5,
 
- geog_data_res = 'mars_default',
- geog_data_path = '/home/zy/WRF/marswrf/macda-to-wrfinterm/sample/WPS_GEOG_MARS',
- opt_geogrid_tbl_path = '/home/zy/WRF/marswrf/macda-to-wrfinterm/sample/geogrid',
+ ! Run from this sample directory; relative paths also work after moving to HPC.
+ geog_data_res = 'mars_data',
+ geog_data_path = './WPS_GEOG_MARS',
+ opt_geogrid_tbl_path = './geogrid',
 /
 
 &ungrib
@@ -40,4 +41,3 @@
  fg_name = 'MACDA',
  io_form_metgrid = 2,
 /
-
