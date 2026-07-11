@@ -1,5 +1,5 @@
-# Mars-oriented GEOGRID.TBL target for WPS 4.6 syntax.
-# Static tiles are not included. See WPS_GEOG_MARS/*/index.copy and the audit docs.
+# Mars static fields generated from /home/zy/WRF/DATA/Data.
+# Run utils/build_mars_geogrid_data.py from the project root before geogrid.exe.
 ===============================
 name = HGT_M
         priority = 1
@@ -8,125 +8,131 @@ name = HGT_M
         df_dy = SLPY
         smooth_option = smth-desmth_special; smooth_passes=1
         fill_missing = 0.
-        interp_option = mars_default:average_gcell(4.0)+four_pt+average_4pt
-        rel_path = mars_default:mola_topography/
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mola_topography/
 ===============================
 name = LANDUSEF
         priority = 1
         dest_type = categorical
         z_dim_name = land_cat
         dominant = LU_INDEX
-        landmask_water = mars_default:2
+        landmask_water = mars_data:2
         mminlu = MARS
-        interp_option = mars_default:nearest_neighbor
-        rel_path = mars_default:mars_surface_class/
+        interp_option = mars_data:nearest_neighbor
+        rel_path = mars_data:mars_surface_class/
 ===============================
 name = SOILCTOP
         priority = 1
         dest_type = categorical
         z_dim_name = soil_cat
         dominant = SCT_DOM
-        interp_option = mars_default:nearest_neighbor
-        rel_path = mars_default:mars_soil_class/
+        interp_option = mars_data:nearest_neighbor
+        rel_path = mars_data:mars_soil_class/
 ===============================
 name = SOILCBOT
         priority = 1
         dest_type = categorical
         z_dim_name = soil_cat
         dominant = SCB_DOM
-        interp_option = mars_default:nearest_neighbor
-        rel_path = mars_default:mars_soil_class/
+        interp_option = mars_data:nearest_neighbor
+        rel_path = mars_data:mars_soil_class/
 ===============================
 name = SOILTEMP
         priority = 1
         dest_type = continuous
         fill_missing = 200.
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_deep_soil_temp/
+        interp_option = mars_data:four_pt+average_4pt
+        rel_path = mars_data:mars_deep_soil_temp/
 ===============================
 name = GREENFRAC
         priority = 1
         dest_type = continuous
         z_dim_name = month
         fill_missing = 0.
-        interp_option = mars_default:nearest_neighbor
-        rel_path = mars_default:mars_greenfrac/
+        interp_option = mars_data:four_pt+average_4pt
+        rel_path = mars_data:mars_greenfrac/
 ===============================
 name = ALBEDO12M
         priority = 1
         dest_type = continuous
         z_dim_name = month
         fill_missing = 25.
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_albedo12m/
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mars_albedo12m/
 ===============================
 name = SNOALB
         priority = 1
         dest_type = continuous
         fill_missing = 0.
-        interp_option = mars_default:nearest_neighbor
-        rel_path = mars_default:mars_snow_albedo/
+        interp_option = mars_data:nearest_neighbor
+        rel_path = mars_data:mars_snow_albedo/
 ===============================
 name = ALBEDO
         priority = 1
-        optional = yes
         dest_type = continuous
         fill_missing = 0.25
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_albedo/
-        flag_in_output = FLAG_MARS_ALBEDO
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mars_albedo/
 ===============================
 name = ALBBCK
         priority = 1
-        optional = yes
         dest_type = continuous
         fill_missing = 0.25
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_albedo/
-        flag_in_output = FLAG_MARS_ALBEDO
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mars_albedo/
 ===============================
 name = THC
         priority = 1
-        optional = yes
         dest_type = continuous
         fill_missing = 250.
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_thermal_inertia/
-        flag_in_output = FLAG_MARS_THERMAL_INERTIA
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mars_thermal_inertia/
 ===============================
 name = THCBCK
         priority = 1
-        optional = yes
         dest_type = continuous
         fill_missing = 250.
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_thermal_inertia/
-        flag_in_output = FLAG_MARS_THERMAL_INERTIA
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mars_thermal_inertia/
 ===============================
 name = EMISS
         priority = 1
-        optional = yes
         dest_type = continuous
-        fill_missing = 0.95
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_emissivity/
-        flag_in_output = FLAG_MARS_EMISSIVITY
+        fill_missing = 1.0
+        interp_option = mars_data:four_pt+average_4pt
+        rel_path = mars_data:mars_emissivity/
 ===============================
 name = EMBCK
         priority = 1
-        optional = yes
         dest_type = continuous
-        fill_missing = 0.95
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_emissivity/
-        flag_in_output = FLAG_MARS_EMISSIVITY
+        fill_missing = 1.0
+        interp_option = mars_data:four_pt+average_4pt
+        rel_path = mars_data:mars_emissivity/
 ===============================
 name = H2OICE
         priority = 1
-        optional = yes
         dest_type = continuous
         fill_missing = 0.
-        interp_option = mars_default:four_pt+average_4pt
-        rel_path = mars_default:mars_h2oice/
-        flag_in_output = FLAG_MARS_H2OICE
+        interp_option = mars_data:four_pt+average_4pt
+        rel_path = mars_data:mars_h2oice/
 ===============================
+name = ZNT
+        priority = 1
+        dest_type = continuous
+        fill_missing = 0.01
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mars_roughness/
+===============================
+name = grd_ice_pc
+        priority = 1
+        dest_type = continuous
+        fill_missing = 0.
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mars_soil_ice_pc/
+===============================
+name = grd_ice_dp
+        priority = 1
+        dest_type = continuous
+        fill_missing = -9999.
+        interp_option = mars_data:average_gcell(4.0)+four_pt+average_4pt
+        rel_path = mars_data:mars_soil_ice_dp/
