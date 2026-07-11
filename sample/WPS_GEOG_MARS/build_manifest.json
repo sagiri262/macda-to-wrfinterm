@@ -1,0 +1,170 @@
+{
+  "datasets": [
+    {
+      "bytes": 136152,
+      "dataset": "mola_topography",
+      "decoded_maximum": 20525.0,
+      "decoded_minimum": -7493.0,
+      "encoded_maximum": 20525.0,
+      "encoded_minimum": -7493.0,
+      "levels": 1,
+      "path": "mola_topography/00001-00360.00001-00180",
+      "sha256": "48c4db637d080ae8e86a30a5aa9222e6071b85969468ad36c6988c64733e7dda"
+    },
+    {
+      "bytes": 68076,
+      "dataset": "mars_surface_class",
+      "decoded_maximum": 1.0,
+      "decoded_minimum": 1.0,
+      "encoded_maximum": 1.0,
+      "encoded_minimum": 1.0,
+      "levels": 1,
+      "path": "mars_surface_class/00001-00360.00001-00180",
+      "sha256": "c5ee849c9255a10bf7c3fa975d30556cfc61e3670f90cbee814c75712f35d2cd"
+    },
+    {
+      "bytes": 68076,
+      "dataset": "mars_soil_class",
+      "decoded_maximum": 1.0,
+      "decoded_minimum": 1.0,
+      "encoded_maximum": 1.0,
+      "encoded_minimum": 1.0,
+      "levels": 1,
+      "path": "mars_soil_class/00001-00360.00001-00180",
+      "sha256": "c5ee849c9255a10bf7c3fa975d30556cfc61e3670f90cbee814c75712f35d2cd"
+    },
+    {
+      "bytes": 136152,
+      "dataset": "mars_deep_soil_temp",
+      "decoded_maximum": 200.0,
+      "decoded_minimum": 200.0,
+      "encoded_maximum": 200.0,
+      "encoded_minimum": 200.0,
+      "levels": 1,
+      "path": "mars_deep_soil_temp/00001-00360.00001-00180",
+      "sha256": "af08c642adff4e0de945e65ce9c07c165c51af2ca7f2e842a7ecc456e2aad241"
+    },
+    {
+      "bytes": 816912,
+      "dataset": "mars_greenfrac",
+      "decoded_maximum": 0.0,
+      "decoded_minimum": 0.0,
+      "encoded_maximum": 0.0,
+      "encoded_minimum": 0.0,
+      "levels": 12,
+      "path": "mars_greenfrac/00001-00360.00001-00180",
+      "sha256": "34fe99f5d265ecf214f8107521fccddbf4944bf8d1723c5be3f0b8a9d55515d0"
+    },
+    {
+      "bytes": 1633824,
+      "dataset": "mars_albedo12m",
+      "decoded_maximum": 49.620000000000005,
+      "decoded_minimum": 8.32,
+      "encoded_maximum": 4962.0,
+      "encoded_minimum": 832.0,
+      "levels": 12,
+      "path": "mars_albedo12m/00001-00360.00001-00180",
+      "sha256": "4819adb217fe7b2c2ff019bc17bcccc2e7cd88abff638ec070360c1ef9b9647c"
+    },
+    {
+      "bytes": 68076,
+      "dataset": "mars_snow_albedo",
+      "decoded_maximum": 0.0,
+      "decoded_minimum": 0.0,
+      "encoded_maximum": 0.0,
+      "encoded_minimum": 0.0,
+      "levels": 1,
+      "path": "mars_snow_albedo/00001-00360.00001-00180",
+      "sha256": "d478ac6bfbe058a24f9914842c9afcc7da5bd72ba66a0bb6162144f6076ca1be"
+    },
+    {
+      "bytes": 136152,
+      "dataset": "mars_albedo",
+      "decoded_maximum": 0.49620000000000003,
+      "decoded_minimum": 0.08320000000000001,
+      "encoded_maximum": 4962.0,
+      "encoded_minimum": 832.0,
+      "levels": 1,
+      "path": "mars_albedo/00001-00360.00001-00180",
+      "sha256": "48d6911af66130c5b2af7ef2b37e1798fc5a225e221d82c2a96504f7db383dff"
+    },
+    {
+      "bytes": 272304,
+      "dataset": "mars_thermal_inertia",
+      "decoded_maximum": 1086.0,
+      "decoded_minimum": 11.0,
+      "encoded_maximum": 1086.0,
+      "encoded_minimum": 11.0,
+      "levels": 1,
+      "path": "mars_thermal_inertia/00001-00360.00001-00180",
+      "sha256": "9c55ebdcbea7edfb9bffa98e6c8e19c548496c6ffec024eeca73dceab5cae4ab"
+    },
+    {
+      "bytes": 136152,
+      "dataset": "mars_emissivity",
+      "decoded_maximum": 1.0,
+      "decoded_minimum": 1.0,
+      "encoded_maximum": 10000.0,
+      "encoded_minimum": 10000.0,
+      "levels": 1,
+      "path": "mars_emissivity/00001-00360.00001-00180",
+      "sha256": "452033dac36474969e43f4ec3b6676eed9bfa77d4a978f273d46ffff013fb038"
+    },
+    {
+      "bytes": 272304,
+      "dataset": "mars_h2oice",
+      "decoded_maximum": 0.0,
+      "decoded_minimum": 0.0,
+      "encoded_maximum": 0.0,
+      "encoded_minimum": 0.0,
+      "levels": 1,
+      "path": "mars_h2oice/00001-00360.00001-00180",
+      "sha256": "5fa9a23bb208dc366eb45be644c8134ff8fb5dfda4f72702c1f77e66500373a8"
+    },
+    {
+      "bytes": 136152,
+      "dataset": "mars_roughness",
+      "decoded_maximum": 0.15000000000000002,
+      "decoded_minimum": 0.00795,
+      "encoded_maximum": 15000.0,
+      "encoded_minimum": 795.0,
+      "levels": 1,
+      "path": "mars_roughness/00001-00360.00001-00180",
+      "sha256": "18b8ee8b11c3c20b8e881ad0ea248720fa110475a53998844b4359eae2e50e90"
+    },
+    {
+      "bytes": 136152,
+      "dataset": "mars_soil_ice_pc",
+      "decoded_maximum": 0.9563,
+      "decoded_minimum": 0.0204,
+      "encoded_maximum": 9563.0,
+      "encoded_minimum": 204.0,
+      "levels": 1,
+      "path": "mars_soil_ice_pc/00001-00360.00001-00180",
+      "sha256": "59868bccf6f17158e57842deecd67c0c694359ec898a916785922ecafc18d90b"
+    },
+    {
+      "bytes": 272304,
+      "dataset": "mars_soil_ice_dp",
+      "decoded_maximum": 4.949800000000001,
+      "decoded_minimum": -9999.0,
+      "encoded_maximum": 49498.0,
+      "encoded_minimum": -99990000.0,
+      "levels": 1,
+      "path": "mars_soil_ice_dp/00001-00360.00001-00180",
+      "sha256": "f21608d96a38cb0573c876dec2598975934c204e16c26edf85b6f5296d5b29dc"
+    }
+  ],
+  "grid": {
+    "dx_degrees": 1.0,
+    "dy_degrees": 1.0,
+    "nx": 360,
+    "ny": 180
+  },
+  "marswrf_selection": {
+    "alb_my": 1,
+    "ti2007": 0,
+    "topo64": true
+  },
+  "source_root": "/home/zy/WRF/DATA/Data"
+}
