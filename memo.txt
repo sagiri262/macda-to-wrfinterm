@@ -1,0 +1,36 @@
+# 第一步：跑 CESM2 SSP245 下载与转换
+
+bash sample/CESM2-ssp245/download.sh
+
+python3 run_c2w.py -m CESM2-ssp245
+
+
+
+# 第二步：检查 output 目录
+
+ls -lh output/
+
+这一步输出的文件是 WPS intermediate format，也就是 WPS 中间格式文件。
+
+
+# 第三步：进入 WPS，链接 intermediate 文件并运行 metgrid
+
+cd /path/to/WPS
+
+ln -sf /path/to/cmip6-to-wrfinterm/output/CESM2:* ./
+
+ln -sf /path/to/cmip6-to-wrfinterm/output/CESM2_SST:* ./
+
+mpirun -np 8 ./metgrid.exe
+
+
+
+# 第四步：进入 WRF/run，链接 met_em 文件并运行 real/wrf
+
+cd /path/to/WRF/run
+
+ln -sf /path/to/WPS/met_em.d01.* ./
+
+mpirun -np 16 ./real.exe
+
+mpirun -np 32 ./wrf.exe
