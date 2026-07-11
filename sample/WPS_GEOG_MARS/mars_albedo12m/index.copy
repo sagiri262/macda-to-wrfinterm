@@ -1,0 +1,20 @@
+# TEMPLATE ONLY: current real.exe divides ALBEDO12M by 100.
+type=continuous
+signed=no
+projection=regular_ll
+dx=1.0
+dy=1.0
+known_x=1.0
+known_y=1.0
+known_lat=-89.5
+known_lon=0.5
+wordsize=2
+tile_x=360
+tile_y=180
+tile_z_start=1
+tile_z_end=12
+tile_bdr=3
+scale_factor=0.01
+units="percent"
+description="Monthly Mars albedo in percent for current real.exe compatibility"
+

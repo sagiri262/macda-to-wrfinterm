@@ -1,0 +1,20 @@
+# TEMPLATE ONLY: create a global tile containing category 1 (Mars land).
+type=categorical
+signed=no
+projection=regular_ll
+dx=1.0
+dy=1.0
+known_x=1.0
+known_y=1.0
+known_lat=-89.5
+known_lon=0.5
+wordsize=1
+tile_x=360
+tile_y=180
+tile_z=1
+tile_bdr=3
+category_min=1
+category_max=2
+units="category"
+description="Mars all-land surface class; category 2 is reserved as water"
+
