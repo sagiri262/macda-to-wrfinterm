@@ -42,5 +42,4 @@ co2ice  -> CO2ICE      可选
 
 `omega`、`swflux` 和 `lwflux` 是诊断量，不是 `real.exe` 初始化状态。`dustmmr` 不能在没有科学依据的粒径分配方案时直接分给 MarsWRF 的两个沙尘粒径档，因此没有把这些变量错误标成 WRF 状态量。
 
-如果需要让可选的 `TAU_OD2D` 和 `CO2ICE` 进入 `met_em`，需要把 `sample/MACDA-v2/METGRID.TBL.MARS.additions` 中的条目加入实际使用的 Mars `METGRID.TBL`。MarsWRF 时间和物理源码审计以及下游限制见 `MARSWRF_AUDIT.md`。
-
+已经合并完成的运行表是 `sample/metgrid/METGRID.TBL`。该表保留了 `PRESSURE -> PRES`、`TT/UU/VV/GHT/PSFC/SKINTEMP/SPECHUMD/QV` 规则，并加入 `TAU_OD2D` 和 `CO2ICE`。运行时需要把它放到 `opt_metgrid_tbl_path` 指定的目录中，文件名必须精确为 `METGRID.TBL`。
