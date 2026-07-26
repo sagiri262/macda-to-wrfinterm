@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from macda2wrf.mars_time import HDATE_STRATEGIES
+
 
 def _split_floats(value: str) -> list[float]:
     return [float(item.strip()) for item in value.split(",") if item.strip()]
@@ -135,3 +137,8 @@ def _validate_config(config: MacdaConfig) -> None:
         raise ValueError("plev_pa contains duplicate pressure levels")
     if config.time_tolerance_seconds < 0.0:
         raise ValueError("time_tolerance_seconds cannot be negative")
+    if config.hdate_strategy not in HDATE_STRATEGIES:
+        raise ValueError(
+            f"hdate_strategy {config.hdate_strategy!r} is not one of "
+            f"{sorted(HDATE_STRATEGIES)}"
+        )
