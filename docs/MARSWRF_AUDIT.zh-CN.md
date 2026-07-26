@@ -148,3 +148,6 @@ MACDA 气压严格按 `p(k,j,i)=psurf(j,i)*lev(k)` 计算。三维场在对数�
 
 最后，传统 MarsWRF 固定把每一年都视为 669 sol，而 MACDA sol 日历包含 668-sol 年。本次要求处理的 MY28 文件不跨年。对于跨年强迫数据，应统一修改 WRF/WPS 日历，或者使用经过正确 epoch 对齐的 MARS24/MSD 编译；不能悄悄依赖传统模式的固定年长运算。
 
+不改 Fortran 的第三种做法是 `hdate_strategy=marswrf_fixed669`：以配置 `start_index` 指定的那条记录为锚点，把所有记录重新标注到固定 669-sol 日历上，使 sol 间距与 `geth_newdate` 一致。代价是年界之后标签比真实 MACDA 日期晚 1 sol。它只是兼容性重贴标签，不是日历修正。MY34 到 MY35 的具体处理见 `docs/MACDA跨年固定669兼容方案.md`。
+
+

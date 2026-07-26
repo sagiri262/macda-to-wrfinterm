@@ -213,3 +213,11 @@ MACDA sol calendar includes 668-sol years. The requested MY28 file does not
 cross a year boundary. A forcing run that crosses one should either patch the
 WRF/WPS calendar consistently or use a correctly epoch-aligned MARS24/MSD
 build; it should not silently rely on the traditional year arithmetic.
+
+The third, no-Fortran-change option is `hdate_strategy=marswrf_fixed669`: it
+relabels every record onto the fixed 669-sol calendar, anchored at the record at
+the configured `start_index`, so sol spacing matches `geth_newdate`. This keeps
+metgrid running across a boundary at the cost of a one-sol label offset after
+it. It is a compatibility relabelling, not a calendar fix. See
+`docs/MACDA跨年固定669兼容方案.md` for the MY34 to MY35 case.
+

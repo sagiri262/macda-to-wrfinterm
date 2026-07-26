@@ -1,0 +1,96 @@
+# WRF 模拟 MY 34 sols 614 到 sols 644 的大气情况与洞察号的实测验证
+
+## 工作思路和流程
+
+下载数据：
+  · mro-mcs-reanalysis_mars_MY34SOY605_MY34SOY635_v2-0.nc
+  · mro-mcs-reanalysis_mars_MY34SOY635_MY34SOY665_v2-0.nc
+使用`cdo`将两个netcdf文件合并成一个文件，按时间维度合并，检查时间的格式是什么，是不是对齐了。
+
+放入 macda-to-wrfinterm 后输出MACDA的中间格式文件。
+
+记录洞察号的相关信息，包括登陆器的着陆时间、洞察号的失联时间等等
+**着陆时间**：2018-11-26_19:52:59（UTC），转换到 Mars Year 就是：MY 34 Sols 555
+**失联时间**：2022-12-15（UTC）
+
+火星的大气探测仪器主要包括：洞察号**温度与风速测量仪**（TWINS）和**气压传感器**（PS）。
+
+TWINS：由两根完全相同的伸缩臂组成，臂上安装有风速和温度传感器，分别位于着陆器甲板的直径相对两侧，其中一根指向着陆器-Y轴方向，另一根指向+Y轴方向。这两根伸缩臂距地面约1.4米，距着陆器顶甲板200毫米，水平放置且彼此平行。
+
+PS：位于着陆器主体内的压力传感器，通过着陆器顶甲板上的进气口与周围大气相连
+
+数据存档方式：大约80～120个太阳日为周期，存放在一个目录下。如 `sol_0000_0122/`、`sol_0123_0210/`。我们需要的数据就是前 210 个太阳日内的观测数据，
+
+比如我们的数据是 MY34SOY605，就是着陆后的第100个太阳日。模拟时间定为约10个太阳日，也就是截止着陆后的110个太阳日。所以，我们只需要下载 100 sol 到 110 sol 的气象数据就可以了。
+
+
+## 问题
+输出 MACDA WRF-intermediate 文件后，输入 ./metgrid.exe 后返回以下错误：
+```text
+WARNING: Couldn't open file MACDA:0034-00669_00 for input.
+ERROR: The mandatory field TT was not found in any input data.
+application called MPI_Abort(MPI_COMM_WORLD, 0) - process 0
+[unset]: write_line error; fd=-1 buf=:cmd=abort exitcode=0
+:
+system msg for write_line failure : Bad file descriptor
+```
+
+## 原因：两套火星日历的年长不一致
+
+- metgrid 按固定 669 sol 的火星年递推日期。`WPS/metgrid/src/module_date_pack.F:17` 是 `INTEGER, PARAMETER :: MARS_YEAR_SOLS = 669`，第 518 行只有 `dynew > 669` 才进位年份；`WPS/metgrid/src/process_domain_module.F:129` 用 `start_date + t*interval_seconds` 逐个时次拼出文件名。
+- 转换器按 MACDA 文档的 `669/668/669/668/669` 循环日历打标签。MY34（`34 % 5 == 4`）只有 668 sol，所以 `MACDA:0034-00668_22` 之后直接跳到 `MACDA:0035-00001_00`。
+- 于是 metgrid 走到年界时要的是 `0034-00669_00` —— 这一天在 MACDA 日历里不存在，报 `Couldn't open file`，后面的 `TT` 缺失只是连锁结果。已经生成的 48 个 `met_em.d01.0034-006*` 正好停在 `0034-00668_22`。
+- `geth_idts` 也按 669 算总步数：`0034-00665_02 → 0035-00027_00` 在固定年长下是 31 sol，而实际数据只有 30 sol，所以即使补上年界那一天，末尾还会多出 12 个时次。
+
+`docs/MARSWRF_AUDIT.zh-CN.md` 第 5 节早就写过这个限制：跨年强迫数据不能默默依赖传统 MarsWRF 的固定年长运算。
+
+## 解决：hdate_strategy = marswrf_fixed669
+
+不改 WPS/WRF 的 Fortran 日历，改由转换器把标签打到 MarsWRF 的固定 669-sol 日历上：以本次运行第一条记录的真实 MACDA 日期为锚点，之后每过 1 个真实 sol，标签就在 669-sol 日历上前进 1 sol（`macda2wrf/mars_time.py` 的 `relabel_fixed_year`）。这样 HDATE 和文件名的 sol 间距与 `geth_newdate`/`geth_idts` 完全一致，metgrid 要的每一个文件都存在。
+
+本文件 360 个时次的标签结果：
+
+```text
+真实 MACDA 日期        写出的 HDATE / 文件名
+0034-00665_02   ->    0034-00665_02      锚点，不变
+0034-00668_22   ->    0034-00668_22      年界前保持真实日期
+0035-00001_00   ->    0034-00669_00      年界补上 WPS 需要的“幻影” sol 669
+0035-00001_22   ->    0034-00669_22
+0035-00002_00   ->    0035-00001_00
+0035-00027_00   ->    0035-00026_00      末尾时次
+```
+
+代价：**年界之后所有标签比真实 MACDA 日期晚 1 sol**。和洞察号观测对比时，年界之后的模式时间要减 1 sol 才对应真实 sol；模式内部由日期算出的 Ls 也偏早约 0.5°，30 sol 的短模拟可以接受，但必须记在结论里。时间轴本身仍是严格均匀的 2 小时间隔，动力学上没有跳变。
+
+### 配置和 namelist
+
+`config/config.MACDA-v2-MY34-MY35.ini` 已改为：
+
+```ini
+hdate_strategy = marswrf_fixed669
+max_times =
+```
+
+`namelist.wps` 的 `end_date` 必须跟着改（少一个 sol），`start_date` 不变：
+
+```text
+ start_date = '0034-00665_02:00:00',
+ end_date   = '0035-00026_00:00:00',
+ interval_seconds = 7200,
+```
+
+固定年长下 `0034-00665_02 → 0035-00026_00` 正好是 30 sol 减 2 小时，即 359 个间隔、360 个时次，与转换出的文件数一致。
+
+### 重跑步骤
+
+```bash
+rm -f output/MY34-MY35/MACDA:*                      # 旧命名的中间文件必须清掉
+python run_macda2w.py -c config/config.MACDA-v2-MY34-MY35.ini
+rsync -av output/MY34-MY35/MACDA:* 集群:.../WPS/    # 集群上同样先删掉旧的 MACDA:* 和 met_em.*
+./metgrid.exe
+```
+
+已在本机验证年界处的 4 个时次（`--time-index 46 47 58 59`）：写出 `MACDA:0034-00668_22`、`MACDA:0034-00669_00`、`MACDA:0034-00669_22`、`MACDA:0035-00001_00`，回读校验的 HDATE 与文件名一致，序列在 669-sol 日历上连续。`tests/test_mars_time.py` 里 `FixedYearLabelTest` 覆盖了锚点、年界、年界后偏移和不跨年时的等价性。
+
+
+
