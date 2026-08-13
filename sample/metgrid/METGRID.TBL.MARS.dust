@@ -1,0 +1,14 @@
+# Add these entries to the active Mars WPS/metgrid/METGRID.TBL.
+# TRC01 and TRC02 are pressure-level dust mixing ratios written by
+# macda-to-wrfinterm from MACDA dustmmr.
+========================================
+name=TRC01
+        interp_option=sixteen_pt+four_pt+average_4pt
+        fill_missing=0.
+        fill_lev=200100:const(0.)
+========================================
+name=TRC02
+        interp_option=sixteen_pt+four_pt+average_4pt
+        fill_missing=0.
+        fill_lev=200100:const(0.)
+========================================
