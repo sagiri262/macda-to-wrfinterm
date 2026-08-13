@@ -4,6 +4,8 @@ uwind,UU,m s-1,3d_sigma,identity,true,true,Zonal wind component
 vwind,VV,m s-1,3d_sigma,identity,true,true,Meridional wind component
 __pressure__,PRESSURE,Pa,3d_pressure,pressure,true,true,Pressure on source slabs for metgrid PRES derivation
 geop,GHT,m,3d_sigma,geop_to_height,true,true,Geopotential height
+dustmmr,TRC01,kg kg-1,3d_sigma,dust_to_bin1_tracer,true,true,First MarsWRF dust-bin mixing ratio
+dustmmr,TRC02,kg kg-1,3d_sigma,dust_to_bin2_tracer,true,true,Second MarsWRF dust-bin mixing ratio
 psurf,PSFC,Pa,2d,identity,true,true,Surface pressure
 tsurf,SKINTEMP,K,2d,identity,true,true,Skin temperature
 __zero__,SPECHUMD,kg kg-1,3d_constant,zero,true,true,Specific humidity zero
