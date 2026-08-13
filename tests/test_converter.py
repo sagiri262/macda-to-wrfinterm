@@ -3,7 +3,10 @@ from __future__ import annotations
 from types import SimpleNamespace
 import unittest
 
-from macda2wrf.converter import MacdaConverter
+import numpy as np
+
+from macda2wrf.converter import FieldSpec, MacdaConverter, validateDustFieldTable
+from macda2wrf.wrf_intermediate import IntermediateRecord
 from tests.macda_boundary_fixture import (FIRST_MY35_INDEX, LAST_INDEX, LAST_MY34_INDEX,
                                           RECORD_COUNT, FakeMacdaReader,
                                           boundary_records, time_axis)
@@ -116,6 +119,103 @@ class ConverterStableAnchorTest(unittest.TestCase):
     def test_xfcst_can_be_switched_off(self) -> None:
         converter = make_converter(xfcst_from_start=False)
         self.assertEqual(converter._xfcst_hours(self.time_values, 47, 0), 0.0)
+
+
+class DustTracerInitializationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.converter = object.__new__(MacdaConverter)
+        self.converter.cfg = SimpleNamespace(dustMassFraction1=0.3, dustMassFraction2=0.7,
+            dustWeight1=0.3, dustWeight2=0.7, plev_pa=[700.0, 610.0])
+
+    def testDefaultBinWeightsPreserveMacdaMass(self) -> None:
+        source = np.array([[[2.0e-6]]], dtype=np.float64)
+        bin1 = self.converter._transform_3d(SimpleNamespace(transform="dust_to_bin1_tracer"), source)
+        bin2 = self.converter._transform_3d(SimpleNamespace(transform="dust_to_bin2_tracer"), source)
+        np.testing.assert_allclose(bin1, source)
+        np.testing.assert_allclose(bin2, source)
+        total = 0.3 * bin1 + 0.7 * bin2
+        np.testing.assert_allclose(total, source)
+
+    def testMassAllocationCanDifferFromTracerWeights(self) -> None:
+        self.converter.cfg.dustMassFraction1 = 0.2
+        self.converter.cfg.dustMassFraction2 = 0.8
+        source = np.array([[[2.0e-6]]], dtype=np.float64)
+        bin1 = self.converter._transform_3d(SimpleNamespace(transform="dust_to_bin1_tracer"), source)
+        bin2 = self.converter._transform_3d(SimpleNamespace(transform="dust_to_bin2_tracer"), source)
+        np.testing.assert_allclose(bin1, (0.2 / 0.3) * source)
+        np.testing.assert_allclose(bin2, (0.8 / 0.7) * source)
+        total = 0.3 * bin1 + 0.7 * bin2
+        np.testing.assert_allclose(total, source)
+
+    def testNegativeDustIsRejected(self) -> None:
+        field = SimpleNamespace(aim_v="TRC01", transform="dust_to_bin1_tracer")
+        with self.assertRaisesRegex(ValueError, "negative dust mixing ratios"):
+            self.converter._ensure_finite(field, np.array([[-1.0e-6]]))
+
+    def testIntermediateRecordsPreserveMass(self) -> None:
+        records = []
+        for level in self.converter.cfg.plev_pa:
+            records.append(makeDustRecord("TRC01", level, 2.0e-6))
+            records.append(makeDustRecord("TRC02", level, 2.0e-6))
+        self.converter._validateDustRecords(records)
+
+    def testIntermediateRecordsMatchSourceDust(self) -> None:
+        records = []
+        expectedDustRecords = []
+        for level in self.converter.cfg.plev_pa:
+            records.append(makeDustRecord("TRC01", level, 2.0e-6))
+            records.append(makeDustRecord("TRC02", level, 2.0e-6))
+            expectedDustRecords.append((level, np.full((2, 2), 2.0e-6)))
+        self.converter._validateDustRecords(records, expectedDustRecords)
+
+    def testSourceDustMismatchIsRejected(self) -> None:
+        records = []
+        expectedDustRecords = []
+        for level in self.converter.cfg.plev_pa:
+            records.append(makeDustRecord("TRC01", level, 2.0e-6))
+            records.append(makeDustRecord("TRC02", level, 2.0e-6))
+            expectedDustRecords.append((level, np.full((2, 2), 3.0e-6)))
+        with self.assertRaisesRegex(ValueError, "do not reconstruct source dust"):
+            self.converter._validateDustRecords(records, expectedDustRecords)
+
+    def testIncompleteDustFieldTableIsRejected(self) -> None:
+        fields = [makeDustField("TRC01", "dust_to_bin1_tracer")]
+        with self.assertRaisesRegex(ValueError, "exactly one mapping"):
+            validateDustFieldTable(fields)
+
+    def testMissingDustLevelIsRejected(self) -> None:
+        records = [makeDustRecord("TRC01", 700.0, 2.0e-6),
+            makeDustRecord("TRC01", 610.0, 2.0e-6),
+            makeDustRecord("TRC02", 700.0, 2.0e-6)]
+        with self.assertRaisesRegex(ValueError, "must each contain 2 pressure levels"):
+            self.converter._validateDustRecords(records)
+
+    def testDuplicateDustLevelIsRejected(self) -> None:
+        records = [makeDustRecord("TRC01", 700.0, 2.0e-6),
+            makeDustRecord("TRC01", 700.0, 2.0e-6),
+            makeDustRecord("TRC02", 700.0, 2.0e-6),
+            makeDustRecord("TRC02", 700.0, 2.0e-6)]
+        with self.assertRaisesRegex(ValueError, "duplicate pressure levels"):
+            self.converter._validateDustRecords(records)
+
+    def testZeroDustVolumeIsRejected(self) -> None:
+        records = []
+        for level in self.converter.cfg.plev_pa:
+            records.append(makeDustRecord("TRC01", level, 0.0))
+            records.append(makeDustRecord("TRC02", level, 0.0))
+        with self.assertRaisesRegex(ValueError, "zero at every pressure level"):
+            self.converter._validateDustRecords(records)
+
+
+def makeDustRecord(fieldName: str, level: float, value: float) -> IntermediateRecord:
+    slab = np.full((2, 2), value, dtype=np.float32)
+    return IntermediateRecord(hdate="0034-00001_00:00:00.0000", xfcst=0.0, field=fieldName,
+        units="kg kg-1", xlvl=level, nx=2, ny=2, is_wind_earth_rel=0, slab=slab)
+
+
+def makeDustField(fieldName: str, transform: str) -> FieldSpec:
+    return FieldSpec(src_v="dustmmr", aim_v=fieldName, units="kg kg-1", kind="3d_sigma",
+                     transform=transform, required=True, enabled=True, desc="Dust tracer")
 
 
 if __name__ == "__main__":
