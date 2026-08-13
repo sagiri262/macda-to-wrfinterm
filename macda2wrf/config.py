@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from macda2wrf.dust import validateDustParameters
 from macda2wrf.mars_time import HDATE_STRATEGIES
 
 
@@ -48,6 +49,19 @@ class MacdaConfig:
     mars_radius_km: float
     mars_gravity: float
     tau_reference_pressure_pa: float
+    dustMassFraction1: float
+    dustMassFraction2: float
+    dustWeight1: float
+    dustWeight2: float
+    macdaDustDensity: float
+    macdaDustEffectiveRadius: float
+    macdaDustExtinctionEfficiency: float
+    marswrfRadiationDustDensity: float
+    marswrfRadiationGravity: float
+    marswrfDustDiameter1: float
+    marswrfDustDiameter2: float
+    marswrfDustExtinctionEfficiency1: float
+    marswrfDustExtinctionEfficiency2: float
     plev_pa: list[float]
     lat_start: float
     lat_end: float
@@ -94,6 +108,19 @@ def load_config(config_path: str | Path) -> MacdaConfig:
         tau_reference_pressure_pa=float(
             mars_section.get("tau_reference_pressure_pa", 700.0)
         ),
+        dustMassFraction1=float(mars_section.get("dust_bin1_mass_fraction", 0.3)),
+        dustMassFraction2=float(mars_section.get("dust_bin2_mass_fraction", 0.7)),
+        dustWeight1=float(mars_section.get("marswrf_wt1", 0.3)),
+        dustWeight2=float(mars_section.get("marswrf_wt2", 0.7)),
+        macdaDustDensity=float(mars_section.get("macda_dust_density_kg_m3", 2500.0)),
+        macdaDustEffectiveRadius=float(mars_section.get("macda_dust_effective_radius_m", 1.5e-6)),
+        macdaDustExtinctionEfficiency=float(mars_section.get("macda_dust_qext", 2.62718)),
+        marswrfRadiationDustDensity=float(mars_section.get("marswrf_radiation_dust_density_kg_m3", 2650.0)),
+        marswrfRadiationGravity=float(mars_section.get("marswrf_radiation_gravity_m_s2", 3.727)),
+        marswrfDustDiameter1=float(mars_section.get("marswrf_ddpp_m", 1.0e-6)),
+        marswrfDustDiameter2=float(mars_section.get("marswrf_ddpp2_m", 2.4e-6)),
+        marswrfDustExtinctionEfficiency1=float(mars_section.get("marswrf_qext1", 3.04)),
+        marswrfDustExtinctionEfficiency2=float(mars_section.get("marswrf_qext2", 3.04)),
         plev_pa=_split_floats(output_section["plev_pa"]),
         lat_start=output_section.getfloat("lat_start", fallback=-87.5),
         lat_end=output_section.getfloat("lat_end", fallback=87.5),
@@ -137,6 +164,12 @@ def _validate_config(config: MacdaConfig) -> None:
         raise ValueError("plev_pa contains duplicate pressure levels")
     if config.time_tolerance_seconds < 0.0:
         raise ValueError("time_tolerance_seconds cannot be negative")
+    opticalParameters = (config.macdaDustDensity, config.macdaDustEffectiveRadius,
+        config.macdaDustExtinctionEfficiency, config.marswrfRadiationDustDensity,
+        config.marswrfRadiationGravity, config.marswrfDustDiameter1, config.marswrfDustDiameter2,
+        config.marswrfDustExtinctionEfficiency1, config.marswrfDustExtinctionEfficiency2)
+    validateDustParameters(config.dustMassFraction1, config.dustMassFraction2, config.dustWeight1,
+        config.dustWeight2, opticalParameters)
     if config.hdate_strategy not in HDATE_STRATEGIES:
         raise ValueError(
             f"hdate_strategy {config.hdate_strategy!r} is not one of "

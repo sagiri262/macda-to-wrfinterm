@@ -161,7 +161,7 @@ def validate_intermediate_file(
     expected_shape: tuple[int, int],
     required_fields: set[str],
     expected_xfcst: float | None = None,
-) -> None:
+) -> list[IntermediateRecord]:
     records = read_intermediate_file(path)
     if not records:
         raise ValueError(f"WRF intermediate file contains no records: {path}")
@@ -188,6 +188,7 @@ def validate_intermediate_file(
             raise ValueError(f"Field {record.field} contains non-finite values")
         if record.field in {"UU", "VV"} and record.is_wind_earth_rel != 1:
             raise ValueError(f"Field {record.field} is not marked earth-relative")
+    return records
 
 
 def _text(value: bytes) -> str:

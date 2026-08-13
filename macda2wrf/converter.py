@@ -10,6 +10,9 @@ from typing import Iterable
 import numpy as np
 
 from macda2wrf.config import MacdaConfig
+from macda2wrf.dust import (columnOpticalDepth, combineDustTracers,
+                            massExtinctionCoefficient, opticalDepthScaling,
+                            tracerFromDustMass, validateDustPartition)
 from macda2wrf.grid import RegularLatLonGrid, horizontal_interp_2d, orient_lat_lon
 from macda2wrf.macda_reader import MacdaReader
 from macda2wrf.mars_time import (ANCHORED_HDATE_STRATEGIES, LabelledRecord,
@@ -17,8 +20,12 @@ from macda2wrf.mars_time import (ANCHORED_HDATE_STRATEGIES, LabelledRecord,
                                  build_label_sequence, short_mars_years_left,
                                  validate_macda_time)
 from macda2wrf.vertical import interp_sigma_to_pressure
-from macda2wrf.wrf_intermediate import (WrfIntermediateWriter, XLVL_SURFACE,
-                                        validate_intermediate_file)
+from macda2wrf.wrf_intermediate import (IntermediateRecord, WrfIntermediateWriter,
+                                        XLVL_SURFACE, validate_intermediate_file)
+
+DUST_BIN1_TRANSFORM = "dust_to_bin1_tracer"
+DUST_BIN2_TRANSFORM = "dust_to_bin2_tracer"
+DUST_TRANSFORMS = {DUST_BIN1_TRANSFORM, DUST_BIN2_TRANSFORM}
 
 
 @dataclass(frozen=True)
@@ -41,6 +48,7 @@ class MacdaConverter:
                                       lon_end=cfg.lon_end, nlon=cfg.nlon,
                                       radius_km=cfg.mars_radius_km)
         self.fields = read_field_table(cfg.variable_table)
+        validateDustFieldTable(self.fields)
 
     def run(self, time_indices: Iterable[int] | None = None,
             max_times_override: int | None = None,
@@ -56,6 +64,7 @@ class MacdaConverter:
             indices = self._select_indices(ntimes, anchor_index, time_indices,
                                            max_times_override)
             labelled = self._build_labels(reader, indices, time_values, anchor_index)
+            self._printDustConfiguration()
 
             if dry_run:
                 self._print_dry_run(reader, labelled, time_values, anchor_index)
@@ -168,6 +177,9 @@ class MacdaConverter:
         psfc, src_lats, src_lons = orient_lat_lon(psfc_raw, lat, lon,
                                                   self.cfg.lon_convention)
         del src_lats, src_lons
+        self._printDustOpacityDiagnostic(reader, time_index, sigma, psfc_raw)
+        expectedDustRecords = self._expectedDustRecords(reader, time_index, lat,
+                                                         lon, sigma, psfc)
 
         with WrfIntermediateWriter(output_path, self.grid, hdate=hdate,
                                    map_source=self.cfg.map_source,
@@ -181,10 +193,10 @@ class MacdaConverter:
                                   psfc)
         required_fields = {field.aim_v for field in self.fields
                            if field.enabled and field.required}
-        validate_intermediate_file(output_path, expected_hdate=hdate,
-                                   expected_shape=(self.grid.nlat, self.grid.nlon),
-                                   expected_xfcst=xfcst,
-                                   required_fields=required_fields)
+        records = validate_intermediate_file(output_path, expected_hdate=hdate,
+            expected_shape=(self.grid.nlat, self.grid.nlon), expected_xfcst=xfcst,
+            required_fields=required_fields)
+        self._validateDustRecords(records, expectedDustRecords)
         return output_path
 
     def _write_field(self, reader: MacdaReader, writer: WrfIntermediateWriter,
@@ -245,6 +257,10 @@ class MacdaConverter:
         if bad:
             raise ValueError(f"Field {field.aim_v} contains {bad} non-finite values "
                              f"after conversion")
+        if field.transform in DUST_TRANSFORMS and np.any(data < 0.0):
+            minimum = float(np.min(data))
+            raise ValueError(f"Field {field.aim_v} contains negative dust mixing "
+                             f"ratios; minimum={minimum:.8g}")
 
     def _transform_2d(self, field: FieldSpec, slab: np.ndarray,
                       psfc: np.ndarray) -> np.ndarray:
@@ -262,7 +278,149 @@ class MacdaConverter:
             return volume
         if field.transform == "geop_to_height":
             return volume / self.cfg.mars_gravity
+        if field.transform == DUST_BIN1_TRANSFORM:
+            return tracerFromDustMass(volume, self.cfg.dustMassFraction1,
+                                      self.cfg.dustWeight1)
+        if field.transform == DUST_BIN2_TRANSFORM:
+            return tracerFromDustMass(volume, self.cfg.dustMassFraction2,
+                                      self.cfg.dustWeight2)
         raise ValueError(f"Unsupported 3-D transform {field.transform}")
+
+    def _expectedDustRecords(self, reader: MacdaReader, timeIndex: int,
+                             lat: np.ndarray, lon: np.ndarray, sigma: np.ndarray,
+                             surfacePressure: np.ndarray) -> list[tuple[float, np.ndarray]]:
+        dustFields = [field for field in self.fields
+                      if field.enabled and field.transform in DUST_TRANSFORMS]
+        if not dustFields:
+            return []
+
+        sourceVariable = dustFields[0].src_v
+        raw = reader.read(sourceVariable, time_index=timeIndex)
+        volume, srcLats, srcLons = orient_lat_lon(raw, lat, lon, self.cfg.lon_convention)
+        pressureVolume = interp_sigma_to_pressure(volume, surfacePressure, sigma, self.cfg.plev_pa)
+        expectedRecords: list[tuple[float, np.ndarray]] = []
+        for index, pressureLevel in enumerate(self.cfg.plev_pa):
+            slab = horizontal_interp_2d(pressureVolume[index], srcLats, srcLons, self.grid)
+            self._ensure_finite(dustFields[0], slab)
+            expectedRecords.append((pressureLevel, slab))
+        return expectedRecords
+
+    def _validateDustRecords(self, records: list[IntermediateRecord],
+                              expectedDustRecords: list[tuple[float, np.ndarray]] | None = None) -> None:
+        bin1List = [record for record in records if record.field == "TRC01"]
+        bin2List = [record for record in records if record.field == "TRC02"]
+        if not bin1List and not bin2List:
+            return
+        expectedCount = len(self.cfg.plev_pa)
+        if len(bin1List) != expectedCount or len(bin2List) != expectedCount:
+            raise ValueError(f"TRC01/TRC02 must each contain {expectedCount} pressure levels; "
+                             f"found {len(bin1List)}/{len(bin2List)}")
+
+        bin1Records = self._sortDustRecords(bin1List, "TRC01")
+        bin2Records = self._sortDustRecords(bin2List, "TRC02")
+        bin1Levels = np.asarray([record.xlvl for record in bin1Records], dtype=np.float64)
+        bin2Levels = np.asarray([record.xlvl for record in bin2Records], dtype=np.float64)
+        if not np.allclose(bin1Levels, bin2Levels, rtol=1.0e-6, atol=1.0e-6):
+            raise ValueError("TRC01 and TRC02 do not contain the same pressure levels")
+        expectedLevels = np.asarray(self.cfg.plev_pa, dtype=np.float64)
+        if not np.allclose(np.sort(expectedLevels), bin1Levels, rtol=1.0e-6, atol=1.0e-6):
+            raise ValueError("TRC01/TRC02 pressure levels do not match plev_pa")
+        if expectedDustRecords is not None:
+            if len(expectedDustRecords) != expectedCount:
+                raise ValueError("Expected dust records do not match the configured pressure levels")
+            expectedDustRecords = sorted(expectedDustRecords, key=lambda record: record[0])
+            expectedLevels = np.asarray([record[0] for record in expectedDustRecords],
+                                        dtype=np.float64)
+            if not np.allclose(expectedLevels, bin1Levels, rtol=1.0e-6, atol=1.0e-6):
+                raise ValueError("Expected dust records do not match TRC01/TRC02 pressure levels")
+
+        combinedSlabs: list[np.ndarray] = []
+        for index, (bin1Record, bin2Record) in enumerate(zip(bin1Records, bin2Records)):
+            level = bin1Record.xlvl
+            tracer1 = bin1Record.slab
+            tracer2 = bin2Record.slab
+            if np.any(tracer1 < 0.0) or np.any(tracer2 < 0.0):
+                raise ValueError(f"TRC01/TRC02 contain negative values at {level:.8g} Pa")
+            combined = combineDustTracers(tracer1, tracer2, self.cfg.dustWeight1,
+                self.cfg.dustWeight2)
+            combinedSlabs.append(combined)
+            sourceEstimates: list[np.ndarray] = []
+            if self.cfg.dustMassFraction1 > 0.0:
+                sourceEstimates.append(tracer1 * self.cfg.dustWeight1 / self.cfg.dustMassFraction1)
+            if self.cfg.dustMassFraction2 > 0.0:
+                sourceEstimates.append(tracer2 * self.cfg.dustWeight2 / self.cfg.dustMassFraction2)
+            for sourceEstimate in sourceEstimates:
+                if not np.allclose(combined, sourceEstimate, rtol=1.0e-6, atol=1.0e-15):
+                    raise ValueError(f"TRC01/TRC02 do not conserve dust mass at {level:.8g} Pa")
+            if expectedDustRecords is not None:
+                sourceDust = expectedDustRecords[index][1]
+                try:
+                    validateDustPartition(sourceDust, tracer1, tracer2,
+                                          self.cfg.dustWeight1, self.cfg.dustWeight2)
+                except ValueError as error:
+                    raise ValueError(
+                        f"TRC01/TRC02 do not reconstruct source dust at {level:.8g} Pa"
+                    ) from error
+
+        combinedVolume = np.stack(combinedSlabs)
+        if not np.any(combinedVolume > 0.0):
+            raise ValueError("TRC01/TRC02 are zero at every pressure level")
+        print(f"[macda2w] dust mass verified: levels={len(combinedSlabs)} "
+              f"min={float(np.min(combinedVolume)):.8g} "
+              f"max={float(np.max(combinedVolume)):.8g}")
+
+    @staticmethod
+    def _sortDustRecords(records: list[IntermediateRecord], fieldName: str) -> list[IntermediateRecord]:
+        sortedRecords = sorted(records, key=lambda record: record.xlvl)
+        levels = np.asarray([record.xlvl for record in sortedRecords], dtype=np.float64)
+        if np.any(np.isclose(np.diff(levels), 0.0, rtol=1.0e-6, atol=1.0e-6)):
+            raise ValueError(f"{fieldName} contains duplicate pressure levels")
+        return sortedRecords
+
+    def _printDustConfiguration(self) -> None:
+        if not any(field.transform in DUST_TRANSFORMS for field in self.fields):
+            return
+        scale = opticalDepthScaling(self.cfg.macdaDustDensity, self.cfg.macdaDustEffectiveRadius,
+            self.cfg.macdaDustExtinctionEfficiency, self.cfg.mars_gravity,
+            self.cfg.marswrfRadiationDustDensity, self.cfg.marswrfRadiationGravity,
+            self.cfg.marswrfDustDiameter1, self.cfg.marswrfDustDiameter2,
+            self.cfg.marswrfDustExtinctionEfficiency1, self.cfg.marswrfDustExtinctionEfficiency2,
+            self.cfg.dustMassFraction1, self.cfg.dustMassFraction2)
+        print(f"[macda2w] dust partition: mass fractions="
+              f"{self.cfg.dustMassFraction1:.6g}/{self.cfg.dustMassFraction2:.6g}, "
+              f"MarsWRF wt={self.cfg.dustWeight1:.6g}/{self.cfg.dustWeight2:.6g}")
+        print(f"[macda2w] estimated MarsWRF/MACDA dust-opacity scaling={scale:.6g}")
+        if not np.isclose(scale, 1.0, rtol=0.05, atol=0.0):
+            print("[macda2w] warning: mass is conserved, but the configured MarsWRF "
+                  "particle optics cannot reproduce MACDA opacity within 5%")
+
+    def _printDustOpacityDiagnostic(self, reader: MacdaReader, timeIndex: int, sigma: np.ndarray,
+        surfacePressure: np.ndarray) -> None:
+        if not any(field.transform in DUST_TRANSFORMS for field in self.fields):
+            return
+        if not reader.has_var("dustmmr") or not reader.has_var("coldust"):
+            return
+
+        dust = reader.read("dustmmr", time_index=timeIndex)
+        observed = reader.read("coldust", time_index=timeIndex)
+        macdaMassExtinction = massExtinctionCoefficient(self.cfg.macdaDustExtinctionEfficiency,
+            self.cfg.macdaDustDensity, self.cfg.macdaDustEffectiveRadius)
+        macdaOpticalDepth = columnOpticalDepth(dust, surfacePressure, sigma, macdaMassExtinction,
+            self.cfg.mars_gravity)
+        scale = opticalDepthScaling(self.cfg.macdaDustDensity, self.cfg.macdaDustEffectiveRadius,
+            self.cfg.macdaDustExtinctionEfficiency, self.cfg.mars_gravity,
+            self.cfg.marswrfRadiationDustDensity, self.cfg.marswrfRadiationGravity,
+            self.cfg.marswrfDustDiameter1, self.cfg.marswrfDustDiameter2,
+            self.cfg.marswrfDustExtinctionEfficiency1, self.cfg.marswrfDustExtinctionEfficiency2,
+            self.cfg.dustMassFraction1, self.cfg.dustMassFraction2)
+        valid = np.isfinite(observed) & np.isfinite(macdaOpticalDepth) & (observed > 0.0)
+        if not np.any(valid):
+            print("[macda2w] warning: coldust has no positive finite values for closure")
+            return
+        macdaRatio = float(np.median(macdaOpticalDepth[valid] / observed[valid]))
+        marswrfRatio = macdaRatio * scale
+        print(f"[macda2w] opacity closure: MACDA-derived/coldust median={macdaRatio:.6g}, "
+              f"MarsWRF-configured/coldust median={marswrfRatio:.6g}")
 
     def _xfcst_hours(self, time_values: np.ndarray, time_index: int,
                      anchor_index: int) -> float:
@@ -329,6 +487,27 @@ def read_field_table(path: str | Path) -> list[FieldSpec]:
     if not fields:
         raise ValueError(f"Variable table contains no fields: {path}")
     return fields
+
+
+def validateDustFieldTable(fields: list[FieldSpec]) -> None:
+    """Require a complete, consistently configured two-bin MACDA dust mapping."""
+
+    dustFields = [field for field in fields
+                  if field.enabled and field.transform in DUST_TRANSFORMS]
+    if not dustFields:
+        return
+    expectedTransforms = {DUST_BIN1_TRANSFORM, DUST_BIN2_TRANSFORM}
+    transforms = {field.transform for field in dustFields}
+    if transforms != expectedTransforms or len(dustFields) != 2:
+        raise ValueError("Dust field table must contain exactly one mapping for each dust bin")
+    if {field.aim_v for field in dustFields} != {"TRC01", "TRC02"}:
+        raise ValueError("Dust field table must map the two dust bins to TRC01 and TRC02")
+    if any(field.kind != "3d_sigma" for field in dustFields):
+        raise ValueError("Dust field table must convert dust bins from sigma levels")
+    if any(not field.required for field in dustFields):
+        raise ValueError("Dust field table must require both dust bins")
+    if len({field.src_v for field in dustFields}) != 1:
+        raise ValueError("Dust field table must use one source variable for both dust bins")
 
 
 def _csv_bool(value: str) -> bool:
