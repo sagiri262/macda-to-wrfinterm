@@ -14,7 +14,7 @@ from macda2wrf.converter import MacdaConverter
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-c", "--config",
-        default="config/config.MACDA-v2.ini",
+        default="conf/config.MACDA-v2.ini",
         help="Path to the MACDA conversion config file.",)
     parser.add_argument("--time-index", type=int,action="append",
         help="Process one time index. Repeat to process several explicit indices.",)
@@ -30,10 +30,8 @@ def main() -> None:
     try:
         cfg = load_config(Path(args.config))
         converter = MacdaConverter(cfg)
-        written = converter.run(
-            time_indices=args.time_index,
-            max_times_override=args.max_times,
-            dry_run=args.dry_run)
+        written = converter.run(time_indices=args.time_index,
+            max_times_override=args.max_times, dry_run=args.dry_run)
     except Exception as exc:
         print(f"[macda2w] error: {exc}", file=sys.stderr)
         sys.exit(1)

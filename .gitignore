@@ -1,5 +1,7 @@
 .DS_Store
 
+tests/*py
+
 *.fits
 *.fits.gz
 *.zip
@@ -20,5 +22,6 @@ MarsWRF/configure.wrf
 *.gif
 
 /public
-/output/*
+/output/
+/sample/
 /.vscode

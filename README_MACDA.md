@@ -56,7 +56,7 @@ state. `dustmmr` cannot be assigned to MarsWRF's two dust bins without a
 scientific bin-partition assumption, so these variables are intentionally not
 mislabelled as WRF state.
 
-Optional `TAU_OD2D` and `CO2ICE` require the entries in
-`sample/MACDA-v2/METGRID.TBL.MARS.additions` to be added to the active Mars
-METGRID table. See `MARSWRF_AUDIT.md` for the source-level time and physics
-audit and for downstream limitations.
+The merged Mars runtime table is `sample/metgrid/METGRID.TBL`. It retains the
+ARW rules for `PRESSURE -> PRES`, `TT/UU/VV/GHT/PSFC/SKINTEMP/SPECHUMD/QV`
+and adds `TAU_OD2D` and `CO2ICE`. Copy it to the directory selected by
+`opt_metgrid_tbl_path` using the exact filename `METGRID.TBL`.

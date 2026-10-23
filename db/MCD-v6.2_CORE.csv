@@ -1,0 +1,14 @@
+src_v,aim_v,units,kind,transform,required,enabled,desc
+temperature,TT,K,3d_hybrid,identity,true,true,Atmospheric temperature on reconstructed MCD pressure centres
+u,UU,m s-1,3d_hybrid,identity,true,true,Geographical eastward wind
+v,VV,m s-1,3d_hybrid,identity,true,true,Geographical northward wind
+__pressure__,PRESSURE,Pa,3d_pressure,pressure,true,true,Target source-slab isobars rather than WRF dry eta
+ght,GHT,m,3d_hybrid,identity,true,true,Hydrostatic geopotential height above source areoid
+ps,PSFC,Pa,2d,identity,true,true,Surface pressure on unchanged source terrain
+orography,SOILHGT,m,2d,identity,true,true,Source areoid terrain attached to source surface pressure
+tsurf,SKINTEMP,K,2d,identity,true,true,Interpolated MCD surface temperature
+specific_humidity,SPECHUMD,kg kg-1,3d_hybrid,identity,true,true,Water mass fraction from VMR and effective molecular mass
+co2ice,CO2ICE,kg m-2,2d,identity,false,true,Requires audited met_em to real surface CO2 reservoir bridge
+q_bin1,TRC01,kg kg-1,3d_hybrid,identity,false,false,Physical bin1 transported mass pending audited Registry and real bridge
+q_bin2,TRC02,kg kg-1,3d_hybrid,identity,false,false,Physical bin2 transported mass pending audited Registry and real bridge
+tau_wrf_native700,TAU_OD2D,1,2d,identity,false,false,Legacy 700Pa optical diagnostic overwritten by active two-bin radiation

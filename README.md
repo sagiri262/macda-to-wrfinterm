@@ -107,14 +107,14 @@ python -m pip install -r requirements.macda.txt
 先检查：
 ```shell
 python run_macda2w.py \
-  -c config/config.MACDA-v2.ini \
+  -c conf/config.MACDA-v2.ini \
   --dry-run
 ```
 
 生成全部 360 个时次：
 ```shell
 python run_macda2w.py \
-  -c config/config.MACDA-v2.ini \
+  -c conf/config.MACDA-v2.ini \
   --max-times 360
 ```
 
@@ -156,5 +156,5 @@ WPS_GEOG_MARS
 /
 ```
 
-还要准备与字段映射一致的 `metgrid/METGRID.TBL`，其重点是让 metgrid 从 PRESSURE 派生最终 PRES，接收 `TT/UU/VV/GHT/PSFC/SKINTEMP` 等WRF的输入变量，最后根据需要传递 TAU_OD2D 和 CO2ICE，但是这两个变量其实可有可无。
+运行时使用 `sample/metgrid/METGRID.TBL`，并以精确文件名 `metgrid/METGRID.TBL` 放到 WPS 运行目录。该表从 PRESSURE 派生最终 PRES，接收 `TT/UU/VV/GHT/PSFC/SKINTEMP/SPECHUMD/QV`，并传递可选的 TAU_OD2D 和 CO2ICE。
 确保上面做的都没有什么问题后，执行一次 `./metgrid.exe`，metgrid 会自动遍历 start_date 到 end_date，按 interval_seconds=7200 处理全部时次，不需要手工对每个 intermediate 文件执行一次。
